@@ -201,10 +201,10 @@ You can change the backends to which it will apply in the variable `org-expand-d
 ;;;###autoload
 (defun org-expand-doi-buffer ()
   (interactive)
-  (org-with-point-at 1
-    (while (and (org-next-link)
-		(not org-link--search-failed))
-      (org-expand-doi-at-point))))
+  (let ((regexp (concat "doi:" org-doi-re)))
+    (org-with-point-at 1
+      (while (re-search-forward regexp nil t)
+	(org-expand-doi-at-point)))))
 
 ;;;###autoload
 (defun org-expand-doi-at-point (&optional expand-what)
