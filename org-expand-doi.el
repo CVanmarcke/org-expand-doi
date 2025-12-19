@@ -160,7 +160,7 @@ Does not include 'doi:', 'cite:@', or brackets.")
 (require 'json)
 (require 'oc)
 (require 'oc-basic)
-(require 'org-link-doi)
+(require 'ol-doi)
 
 ;;;###autoload
 (defun org-expand-doi-setup ()
