@@ -1,0 +1,32 @@
+#+title: Org-expand-doi
+#+subtitle:
+#+description: An emacs script to automatically import and expand doi references when exporting org-files.
+#+keywords: 
+#+language: en
+#+OPTIONS: toc:nil tags:nil todo:nil
+#+EXCLUDE_TAGS: noexport
+
+
+* Installation
+** With use-package
+#+begin_src emacs-lisp
+  (use-package org-expand-doi
+    :init
+    (unless (package-installed-p 'org-expand-doi)
+      (package-vc-install "https://github.com/cvanmarcke/org-expand-doi"))
+    :after ox
+    :config
+    (org-expand-doi-setup))
+#+end_src
+
+** With use-package and elpaca
+#+begin_src emacs-lisp
+  (use-package org-expand-doi
+    :ensure (:host github :repo "cvanmarcke/org-expand-doi")
+    :after ox
+    :config
+    (org-expand-doi-setup))
+#+end_src
+
+* Configuration
+TODO

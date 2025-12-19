@@ -61,10 +61,28 @@
   ;; Support for local json CSL (eg in the same folder), which can locally be applied with #+BIBLIOGRAPHY
   ;; For this, we will need to make a cache from the local bibliography
   ;; Or before getting the new data, check if such a key already exists!
+  (org-cite-basic--get-entry "Idontexist")
+  (setq entry-test (org-cite-basic--get-entry "scholzCTFindingsAdult2011"))
+  (setq json-test (json-encode entry-test))
+  (setq json-test2 (json-encode (org-expand-doi-get-json-metadata "10.1259/bjr/98449202")))
+  (setq entry-test2 (org-expand-doi-get-json-metadata "10.1259/bjr/98449202"))
+  ;; Can convert alist to plist, but problems with :keyword
+
+  ;; WIll probably have problems with author.....
+  (alist-entry-to-plist entry-test)
+  (defun alist-entry-to-plist (alist)
+    (let ((res '()))
+      (dolist (x alist)
+	(push (intern (concat ":" (symbol-name (car x)))) res)
+	(push (cdr x) res))
+      (nreverse res)))
+
+  ;; Problem: JSON data is plist with :keyword, while cite data is alist
+  ;; However, saving as json DOES work, but this will not work for cache.
+  ;; Therefore: when getting info for expansion: FIRST try to get from org-cite by doi, if unsuccesfull, get from cache
+  ;; What if we overwrite the json file in /var? Best load from json and make cache that way.
+
   )
-
-
-
 
 ;; Variables
 (defcustom org-expand-doi-format "${first-author} et al (${year})"
@@ -141,8 +159,10 @@ Does not include 'doi:', 'cite:@', or brackets.")
 (require 'cl-lib)
 (require 'json)
 (require 'oc)
+(require 'oc-basic)
 (require 'org-link-doi)
 
+;;;###autoload
 (defun org-expand-doi-setup ()
   (interactive)
   ;; Load cache from disk, if not already populated.
@@ -178,6 +198,7 @@ You can change the backends to which it will apply in the variable `org-expand-d
       (org-expand-doi-buffer)
       (org-expand-doi--get-missing-citations-buffer))))
 
+;;;###autoload
 (defun org-expand-doi-buffer ()
   (interactive)
   (org-with-point-at 1
@@ -185,6 +206,7 @@ You can change the backends to which it will apply in the variable `org-expand-d
 		(not org-link--search-failed))
       (org-expand-doi-at-point))))
 
+;;;###autoload
 (defun org-expand-doi-at-point (&optional expand-what)
   (interactive)
   (when (string-equal "doi" (org-element-property :type (org-element-context)))
@@ -299,6 +321,7 @@ and if any of them are not known by the citation manager, get them."
 ;;   (mapcar (lambda (el) (cdr el)) org-doi-cache)
 ;;   (mapcar (lambda (el) (cdr el)) doi-cache))
 
+;;;###autoload
 (defun org-expand-doi-load-cache ()
   "Load `org-doi-cache' from `org-doi-cache-file'."
   (interactive)
