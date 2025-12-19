@@ -161,6 +161,7 @@ Does not include 'doi:', 'cite:@', or brackets.")
 (require 'oc)
 (require 'oc-basic)
 (require 'ol-doi)
+(require 'ox)
 
 ;;;###autoload
 (defun org-expand-doi-setup ()
@@ -246,7 +247,6 @@ You can change the backends to which it will apply in the variable `org-expand-d
 		  org-expand-doi-citation-prefix
 		  doi
 		  org-expand-doi-citation-suffix)))
-
 
 (defun org-expand-doi--expand (doi)
   "Expand a doi number by its metadata, according to the template `org-expand-doi-format'."
