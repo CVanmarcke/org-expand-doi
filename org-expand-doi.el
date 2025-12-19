@@ -285,10 +285,16 @@ and if any of them are not known by the citation manager, get them."
   (let ((keys (org-cite-basic--all-keys))
 	(citations (org-expand-doi--matches-in-buffer org-doi-cite-re 1)))
     (dolist (doi citations)
-      (when (not (member doi keys))
+      (unless (org-cite-basic--get-entry doi)
 	(if (org-expand-doi-get-json-metadata doi)
 	    (org-expand-doi-save-json)
-	  (message (format "Metadata for %s not found" doi)))))))
+	  (message (format "Metadata for %s not found" doi))))
+      ;; OLD version:
+      ;; (when (not (member doi keys))
+      ;; 	(if (org-expand-doi-get-json-metadata doi)
+      ;; 	    (org-expand-doi-save-json)
+      ;; 	  (message (format "Metadata for %s not found" doi))))
+      )))
 
 (defun org-expand-doi--matches-in-buffer (regexp &optional match-group buffer)
   "Return a list of matches of REGEXP in BUFFER or the current buffer if not given."
