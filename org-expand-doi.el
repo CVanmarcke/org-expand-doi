@@ -261,29 +261,33 @@ You can change the backends to which it will apply in the variable `org-expand-d
   "Helper function for s-format.
 Get the value of KEYWORD from the doi plist.
 Case sensitive!"
-  (cond ((string-equal keyword "first-author")
-	 (plist-get (org-expand-doi--get-first-author plist) :family 'equal))
-	((string-equal keyword "first-author-surname")
-	 (plist-get (org-expand-doi--get-first-author plist) :given 'equal))
-	((string-equal keyword "first-author-surname-initial")
-	 (substring 
-	  (plist-get (org-expand-doi--get-first-author plist) :given 'equal)
-	  0 1))
-	((string-equal keyword "cite")
-	 (format "[cite:@%s]" (plist-get plist :id 'equal)))
-	((string-equal keyword "year")
-	 (aref (aref 
-	       (plist-get (plist-get plist :published 'equal) :date-parts 'equal) 0) 0))
-	(t
-	 (plist-get plist (intern (concat ":" keyword)) 'equal))))
+  (or (cond ((string-equal keyword "first-author")
+	     (plist-get (org-expand-doi--get-first-author plist) :family 'equal))
+	    ((string-equal keyword "first-author-surname")
+	     (plist-get (org-expand-doi--get-first-author plist) :given 'equal))
+	    ((string-equal keyword "first-author-surname-initial")
+	     (substring 
+	      (plist-get (org-expand-doi--get-first-author plist) :given 'equal)
+	      0 1))
+	    ((string-equal keyword "cite")
+	     (format "[cite:@%s]" (plist-get plist :id 'equal)))
+	    ((string-equal keyword "year")
+	     (let ((published (or (plist-get plist :published 'equal)
+				  (plist-get plist :issued 'equal))))
+	       (aref (aref (plist-get published :date-parts 'equal) 0) 0)))
+	    (t
+	     (plist-get plist (intern (concat ":" keyword)) 'equal)))
+      ;; If the keyword did not exist return an empty list.
+      ""))
 
 (defun org-expand-doi--get-first-author (entry)
-  (let ((authors (plist-get entry :author 'equal))
+  (let ((authors (or (plist-get entry :author 'equal)
+		     (plist-get entry :editor 'equal)))
 	(first))
     ;; Author is in a vector, so need to convert it first.
     (cl-dolist (author (seq--into-list authors))
-      (when (and (plist-member author :sequence)
-		 (string-equal (plist-get author :sequence) "first"))
+      (when (or (equal 1 (length authors)) ;; if only 1 author
+		(string-equal (plist-get author :sequence) "first"))
 	(setq first author)))
     first))
 
