@@ -262,14 +262,12 @@ You can change the backends to which it will apply in the variable `org-expand-d
 Get the value of KEYWORD from the doi plist.
 Case sensitive!"
   (cond ((string-equal keyword "first-author")
-	 ;; Author is in a vector, so need to use 'aref'
-	 (plist-get (aref (plist-get plist :author 'equal) 0) :family 'equal))
+	 (plist-get (org-expand-doi--get-first-author plist) :family 'equal))
 	((string-equal keyword "first-author-surname")
-	 ;; Author is in a vector, so need to use 'aref'
-	 (plist-get (aref (plist-get plist :author 'equal) 0) :given 'equal))
+	 (plist-get (org-expand-doi--get-first-author plist) :given 'equal))
 	((string-equal keyword "first-author-surname-initial")
 	 (substring 
-	  (plist-get (aref (plist-get plist :author 'equal) 0) :given 'equal)
+	  (plist-get (org-expand-doi--get-first-author plist) :given 'equal)
 	  0 1))
 	((string-equal keyword "cite")
 	 (format "[cite:@%s]" (plist-get plist :id 'equal)))
@@ -278,6 +276,16 @@ Case sensitive!"
 	       (plist-get (plist-get plist :published 'equal) :date-parts 'equal) 0) 0))
 	(t
 	 (plist-get plist (intern (concat ":" keyword)) 'equal))))
+
+(defun org-expand-doi--get-first-author (entry)
+  (let ((authors (plist-get entry :author 'equal))
+	(first))
+    ;; Author is in a vector, so need to convert it first.
+    (cl-dolist (author (seq--into-list authors))
+      (when (and (plist-member author :sequence)
+		 (string-equal (plist-get author :sequence) "first"))
+	(setq first author)))
+    first))
 
 (defun org-expand-doi--get-missing-citations-buffer ()
   "Look for all doi styled citations (eg [cite:@doinumber])
@@ -382,29 +390,31 @@ See 'https://github.com/jkitchin/org-ref'."
     ;; 	;; Somehow add the data to the cache
     ;; 	)
     ;; ELSE get it from internet
-    (let ((url-request-method "GET")
-          (url-mime-accept-string "application/citeproc+json")
-          (json-object-type 'plist)
-          (json-data)
-	  (url (concat org-link-doi-server-url doi)))
-      (with-temp-buffer
-	(url-insert
-	 (url-retrieve-synchronously url))
-	(setq json-data (buffer-string))
+    (condition-case nil 
+	(let ((url-request-method "GET")
+              (url-mime-accept-string "application/citeproc+json")
+              (json-object-type 'plist)
+              (json-data)
+	      (url (concat org-link-doi-server-url doi)))
+	  (with-temp-buffer
+	    (url-insert
+	     (url-retrieve-synchronously url))
+	    (setq json-data (buffer-string))
 
-	(when (or (string-match "<title>Error: DOI Not Found</title>" json-data)
-		  (string-match "Resource not found" json-data)
-		  (string-match "Status *406" json-data)
-		  (string-match "400 Bad Request" json-data))
-	  ;; (browse-url (concat org-link-doi-server-url doi))
-	  (error "Something went wrong.  We got this response:
+	    (when (or (string-match "<title>Error: DOI Not Found</title>" json-data)
+		      (string-match "Resource not found" json-data)
+		      (string-match "Status *406" json-data)
+		      (string-match "400 Bad Request" json-data))
+	      ;; (browse-url (concat org-link-doi-server-url doi))
+	      (error "Something went wrong.  We got this response:
 %s
 
 Check if %s is a valid doi." json-data url))
-	(setq data (json-read-from-string json-data))
-	(plist-put data :id doi)
-	(cl-pushnew (cons doi data) org-doi-cache)
-	data))))
+	    (setq data (json-read-from-string json-data))
+	    (plist-put data :id doi)
+	    (cl-pushnew (cons doi data) org-doi-cache)
+	    data))
+      (error nil))))
 
 (provide 'org-expand-doi)
 ;;; org-expand-doi.el ends here
