@@ -98,7 +98,7 @@
   (expand-file-name (convert-standard-filename "var/org/org-doi-csl.json") user-emacs-directory)
   "List of files with IDs in those files.")
 
-(defcustom org-expand-doi-auto-save-cache t
+(defcustom org-expand-doi-auto-save t
   "If non-nil, auto save the cache on emacs exit."
   :group 'org-expand-doi
   :type '(choice (const :tag "Auto save cache on exit" t)
@@ -168,13 +168,13 @@ Does not include 'doi:', 'cite:@', or brackets.")
   (interactive)
   ;; Load cache from disk, if not already populated.
   (unless org-doi-cache 
-    (org-expand-doi-load-cache))
+    (org-expand-doi-load-json))
   ;; Add the CSL json file to the bibliography.
   (add-to-list 'org-cite-global-bibliography org-doi-json-csl-file)
   ;; Add hook to save the cache on emacs exit
   (add-hook 'kill-emacs-hook (lambda ()
-			       (when org-expand-doi-auto-save-cache
-				 (org-expand-doi-save-cache))))
+			       (when org-expand-doi-auto-save
+				 (org-expand-doi-save-json))))
   ;; Add hook to the export processor
   (add-hook 'org-export-before-processing-hook #'org-expand-doi-export-hook))
 
@@ -184,8 +184,8 @@ Does not include 'doi:', 'cite:@', or brackets.")
   (setq org-cite-global-bibliography
 	(remove org-doi-json-csl-file org-cite-global-bibliography))
   (remove-hook 'kill-emacs-hook (lambda ()
-				  (when org-expand-doi-auto-save-cache
-				    (org-expand-doi-save-cache))))
+				  (when org-expand-doi-auto-save
+				    (org-expand-doi-save-json))))
   (remove-hook 'org-export-before-processing-hook #'org-expand-doi-export-hook))
 
 (defun org-expand-doi-export-hook (backend)
@@ -333,15 +333,30 @@ and if any of them are not known by the citation manager, get them."
     ;; Otherwise json-encode will not encode properly.
     (json-encode (vconcat doi-list))))
 
-;; (defun org-expand-doi--transform-cache (doi-cache)
-;;   "Transforms the cache (an assoc list of doi and doi-metadata)
-;;  into a list of the doi metadata."
-;;   (mapcar (lambda (el) (cdr el)) org-doi-cache)
-;;   (mapcar (lambda (el) (cdr el)) doi-cache))
+;;;###autoload
+(defun org-expand-doi-load-json ()
+  "Load `org-doi-cache' from `org-doi-json-csl-file'."
+  (interactive)
+  (if (and org-doi-json-csl-file
+	   (file-exists-p org-doi-json-csl-file))
+      (condition-case nil 
+	  (if-let ((data (with-temp-buffer
+			   (insert-file-contents org-doi-json-csl-file)
+			   (json-parse-buffer :object-type 'plist))))
+	      (setq org-doi-cache 
+		    (mapcar (lambda (el)
+			      (let ((DOI (plist-get el :DOI 'equal)))
+				(cons DOI el)))
+			    data)))
+	(error
+         (message "Error parsing `org-doi-json-csl-file' from %s, setting it to nil")))
+    (message "Error opening the CSL file: does the file exist?")))
+
 
 ;;;###autoload
 (defun org-expand-doi-load-cache ()
   "Load `org-doi-cache' from `org-doi-cache-file'."
+  ;; DEPRACATED, use 'org-expand-doi-load-json'
   (interactive)
   (when (and org-doi-cache-file
 	     (file-exists-p org-doi-cache-file))
@@ -352,7 +367,7 @@ and if any of them are not known by the citation manager, get them."
 	    (insert-file-contents org-doi-cache-file)
 	    (setq org-doi-cache (read (current-buffer))))
 	(error
-         (message "Could not read `org-doi-cache' from %s, setting it to nil"
+         (message "Could not read `org-doi-cache' from %s"
 		  org-doi-cache-file))))))
 
 (defun org-expand-doi-save-cache ()
