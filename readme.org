@@ -6,27 +6,76 @@
 #+OPTIONS: toc:nil tags:nil todo:nil
 #+EXCLUDE_TAGS: noexport
 
+=org-expand-doi= is an Emacs library designed to streamline the use of DOIs in Org-mode. It automatically fetches metadata for DOI links, expands them into human-readable formats (like "Author et al. (Year)"), and integrates them with =org-cite= or =citar= by generating a local CSL-JSON bibliography on the fly.
+
+* Features
+- *Automatic Metadata Fetching*: Downloads CiteProc JSON metadata directly from DOI servers.
+- *Buffer Expansion*: Converts raw doi:10.xxx links into formatted text with optional citations.
+- *Bibliography Integration*: Automatically maintains a CSL-JSON file and adds it to your =org-cite-global-bibliography=.
+- *Export Integration*: Automatically expands DOIs and resolves missing citations during the Org export process.
+- *Caching*: Stores metadata locally to prevent redundant network requests and improve performance.
 
 * Installation
-** With use-package
+1. Download the script: Save =org-expand-doi.el= to your Emacs load path (e.g., =~/.emacs.d/lisp/=).
+2. Add to configuration: Add the following to your init.el or .emacs:
+
 #+begin_src emacs-lisp
-  (use-package org-expand-doi
-    :init
-    (unless (package-installed-p 'org-expand-doi)
-      (package-vc-install "https://github.com/cvanmarcke/org-expand-doi"))
-    :after ox
-    :config
-    (org-expand-doi-setup))
+  (add-to-list 'load-path "~/.emacs.d/lisp/")
+  (require 'org-expand-doi)
+
+  ;; Initialize the hooks and bibliography settings
+  (org-expand-doi-setup)
 #+end_src
 
-** With use-package and elpaca
+3. Alternative with =use-package=:
+
 #+begin_src emacs-lisp
   (use-package org-expand-doi
-    :ensure (:host github :repo "cvanmarcke/org-expand-doi")
-    :after ox
-    :config
-    (org-expand-doi-setup))
+    :load-path "~/.emacs.d/lisp/"
+    :commands org-expand-doi-setup
+    :init
+    (with-eval-after-load 'ox
+      (org-expand-doi-setup)))
 #+end_src
+
+* Usage
+** Expansion commands:
+- =M-x= =org-expand-doi-buffer=: Scans the entire buffer for =doi:= links and expands them based on your settings.
+- =M-x= =org-expand-doi-at-point=: Expands the DOI link under the cursor.
+
+** Exporting:
+When =(org-expand-doi-setup)= is called, the library hooks into the Org export process. Every time you export a document (to HTML, PDF, etc.), it will:
+
+1. Identify DOI links.
+2. Download any missing metadata.
+3. Format the links for the output document.
+4. Ensure the generated citations are recognized by your bibliography manager.
 
 * Configuration
-TODO
+** Core variables
+
+| Variable                         | Default Value                       | Description                                                                                           |
+|----------------------------------+-------------------------------------+-------------------------------------------------------------------------------------------------------|
+| =org-expand-doi-format=            | "${first-author} et al (${year})"   | The template used for expanding DOI links in the buffer.                                              |
+| =org-expand-doi-export-format=     | "${first-author} et al (${year})"   | The template used specifically during the export process.                                             |
+| =org-expand-doi-default-expansion= | ='all=                                | Controls expansion behavior: 'all (link + citation), 'citation (citation only), or 'link (link only). |
+| =org-doi-json-csl-file=            | =~/.emacs.d/var/org/org-doi-csl.json= | The path where fetched metadata is stored in CSL-JSON format.                                         |
+| =org-expand-doi-make-link=         | t                                   |  Whether expansion should be a link =[[formatted][doi:XXXX]]= or just the description without link.     |
+
+** Formatting templates
+By default =org-expand-doi-format= is set to =${first-author} et al (${year})=: this will replace =doi:XXXXX= with =Author et al (2025)=. This can be customized using the following placeholders:
+- =${any json key}=: any key in the JSON CSL without colon: eg =publisher=, =issue=, =type=, =page=, =volume=, =language=, ...
+- =${title}=: Fetches the corresponding metadata field.
+- =${first-author}=: The family name of the first author.
+- =${year}=: The publication year.
+- =${DOI}=: The DOI number (note: capital letters!).
+- =${cite}=: Inserts a citation in the form of [cite:@doi_number].
+  - Note that you cannot have a citation inside a link. If you want a citation and a link, either (1) make sure =org-expand-doi-default-expansion= is set to ='all= or ='citation= (default is set to '=all=) or (2) set =org-expand-doi-make-link= to nil.
+
+** Optional settings
+- =org-expand-doi-auto-save=: (Default =t=) Automatically saves cached metadata to the JSON file when Emacs exits.
+- =org-expand-doi-citation-prefix=: Add custom text or brackets around the generated citations.
+- =org-expand-doi-citation-suffix=: Add custom text or brackets around the generated citations.
+
+* To do
+- There is a problem when the script is byte compiled: in these cases the =json= functions do not work properly.
