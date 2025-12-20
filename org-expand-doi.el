@@ -401,13 +401,15 @@ Also cache the doi metadata if we need it later.
 
 Function adapted from `doi-utils' by 'jkitchin'.
 See 'https://github.com/jkitchin/org-ref'."
+  ;; If the cache is nil and the CSL JSON file already exists
+  ;; Load the cache from the JSON file
+  (when (and (not org-doi-cache)
+	     org-doi-json-csl-file
+	     (file-exists-p org-doi-json-csl-file))
+    (org-expand-doi-load-json))
   (if-let* ((data (cdr (assoc doi org-doi-cache))))
       ;; We have the data already, so we return it.
       data
-    ;; TODO: else check in bibliography if it already exists
-    ;; (if (member doi (org-cite-basic--all-keys))
-    ;; 	;; Somehow add the data to the cache
-    ;; 	)
     ;; ELSE get it from internet
     (condition-case nil 
 	(let ((url-request-method "GET")
