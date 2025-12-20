@@ -15,6 +15,16 @@
 - *Export Integration*: Automatically expands DOIs and resolves missing citations during the Org export process.
 - *Caching*: Stores metadata locally to prevent redundant network requests and improve performance.
 
+Consider the follow example text:
+#+begin_quote
+Malignant transformation typically occur in cysts larger than 8 cm (doi:10.1016/j.ijscr.2022.107356).
+#+end_quote
+
+This will automatically expand to the following if the default settings are used. Note that "Sylva et al (2022)" has become a link (might not be clickable on github). This expansion can be saved if performed in the buffer, or performed only during the export process so your files are not changed.
+#+begin_quote
+Malignant transformation typically occur in cysts larger than 8 cm ([[doi:10.1016/j.ijscr.2022.107356][Silva et al (2022)]] [cite:@10.1016/j.ijscr.2022.107356]).
+#+end_quote
+
 * Installation
 ** Manual installation
 1. Download the script: Save =org-expand-doi.el= to your Emacs load path (e.g., =~/.emacs.d/lisp/=).
