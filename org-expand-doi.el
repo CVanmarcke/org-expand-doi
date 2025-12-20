@@ -51,7 +51,8 @@ This can be customized using the following placeholders:
 - ${cite}: Inserts a citation in the form of [cite:@doi_number].
    Note that you cannot have a citation inside a link.
    If you want a citation and a link, either
-   (1) make sure org-expand-doi-default-expansion is set to `'all' or `'citation' or
+   (1) make sure org-expand-doi-default-expansion is set to `all' or
+       `citation' or
    (2) set `org-expand-doi-make-link' to nil."
   :group 'org-expand-doi
   :type 'string)
