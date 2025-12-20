@@ -86,60 +86,76 @@
 
 ;; Variables
 (defcustom org-expand-doi-format "${first-author} et al (${year})"
-  "The format to expand doi links")
+  "The format to expand doi links"
+  :group 'org-expand-doi
+  :type 'string)
 (defcustom org-expand-doi-export-format "${first-author} et al (${year})"
-  "The format to expand doi links during export")
+  "The format to expand doi links during export"
+  :group 'org-expand-doi
+  :type 'string)
 
 (defcustom org-doi-cache-file
   (expand-file-name (convert-standard-filename "var/org/org-doi-cache.el") user-emacs-directory)
-  "List of files with IDs in those files.")
+  "List of files with IDs in those files."
+  :group 'org-expand-doi
+  :type 'file)
 
 (defcustom org-doi-json-csl-file
   (expand-file-name (convert-standard-filename "var/org/org-doi-csl.json") user-emacs-directory)
-  "List of files with IDs in those files.")
+  "List of files with IDs in those files."
+  :group 'org-expand-doi
+  :type 'file)
 
-(defcustom org-expand-doi-auto-save t
+(defcustom org-expand-doi-auto-save-cache t
   "If non-nil, auto save the cache on emacs exit."
   :group 'org-expand-doi
-  :type '(choice (const :tag "Auto save cache on exit" t)
-                 (const :tag "Do not auto save cache on exit" nil))
+  :type '(choice (boolean :tag "Auto save cache on exit" t)
+                 (boolean :tag "Do not auto save cache on exit" nil))
   :safe #'booleanp)
 
 (defcustom org-expand-doi-citation-prefix ""
   "The prefix to set after inserting a citation."
+  :type 'string
   :group 'org-expand-doi)
 
 (defcustom org-expand-doi-citation-suffix ""
   "The suffix to set after inserting a citation."
+  :type 'string
   :group 'org-expand-doi)
 
 (defcustom org-expand-doi-default-expansion 'all
   "When non-nil, when expanding doi links, replace the description.
 When nil, keep the description as-is."
   :group 'org-expand-doi
-  :type '(choice (const :tag "Replace link and add citation." 'all)
-                 (const :tag "Only append a citation after doi link." 'citation)
-		 (const :tag "Only replace the doi link." 'link))
+  :type '(choice (symbol :tag "Replace link and add citation." 'all)
+                 (symbol :tag "Only append a citation after doi link." 'citation)
+		 (symbol :tag "Only replace the doi link." 'link))
   :safe #'symbolp)
 
 (defcustom org-expand-doi-export-backend 'any
   "For which backend the export process should be allowed.
 If 'any is selected, always apply. Otherwise, choose your backend."
   :group 'org-expand-doi
+  :type 'symbol
   :safe #'symbolp)
 
 (defcustom org-expand-doi-replace-existing-description t
   "When non-nil, when expanding doi links, replace the description.
 When nil, keep the description as-is." 
   :group 'org-expand-doi
+  :type 'boolean
   :safe #'booleanp)
 
 (defcustom org-expand-doi-make-link t
-  "When non-nil and 'org-expand-doi-default-expansion' is `'all' or `'link', when a doi link is expanded, create a link in the form of `[[desc][doi:XXXX]]' (with desc according to `org-expand-doi-format' or `org-expand-doi-export-format').
+  "When non-nil and 'org-expand-doi-default-expansion' is `'all' or `'link',
+when a doi link is expanded, create a link in the form of `[[desc][doi:XXXX]]'
+(with desc according to `org-expand-doi-format' or `org-expand-doi-export-format').
 If nil, expand without creating a link.
 
-Note that if expansion is performed without link and the buffer is saved, the link to the reference might be lost as the doi number will disappear.
-This will not occur if the expansion is only during export as modifications occur in a temporary buffer."
+Note that if expansion is performed without link and the buffer is saved,
+the link to the reference might be lost as the doi number will disappear.
+This will not occur if the expansion is only during export
+as modifications occur in a temporary buffer."
   :group 'org-expand-doi
   :safe #'booleanp)
 
@@ -306,7 +322,7 @@ Case sensitive!"
 (defun org-expand-doi--get-missing-citations-buffer ()
   "Look for all doi styled citations (eg [cite:@doinumber])
 and if any of them are not known by the citation manager, get them."
-  (let ((keys (org-cite-basic--all-keys))
+  (let (;;  (keys (org-cite-basic--all-keys))
 	(citations (org-expand-doi--matches-in-buffer org-doi-cite-re 1)))
     (dolist (doi citations)
       (unless (org-cite-basic--get-entry doi)
@@ -411,8 +427,7 @@ and if any of them are not known by the citation manager, get them."
 
 (defun org-expand-doi-get-json-metadata (doi)
   "Try to get json metadata for DOI.
-Open the DOI in a browser if we do not get it.
-Afterwards, add an id equal to the doi number so we can reference it with org-cite.
+Add the DOI number as id so we can reference it with org-cite.
 Also cache the doi metadata if we need it later.
 
 Function adapted from `doi-utils' by 'jkitchin'.
