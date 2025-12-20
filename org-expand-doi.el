@@ -178,6 +178,8 @@ Does not include `doi:', `cite:@', or brackets.")
 ;;; FUNCTIONS
 (require 'cl-lib)
 (require 'json)
+(require 'url-http)
+(require 'url-handlers)
 (require 'oc)
 (require 'oc-basic)
 (require 'ol-doi)
@@ -460,7 +462,6 @@ See `https://github.com/jkitchin/org-ref'."
 		      (string-match "Resource not found" json-data)
 		      (string-match "Status *406" json-data)
 		      (string-match "400 Bad Request" json-data))
-	      ;; (browse-url (concat org-link-doi-server-url doi))
 	      (error "Something went wrong.  We got this response:
 %s
 
@@ -469,7 +470,10 @@ Check if %s is a valid doi." json-data url))
 	    (plist-put data :id doi)
 	    (cl-pushnew (cons doi data) org-doi-cache)
 	    data))
-      (error (message "There was an error getting or parsing the json data of doi %s." doi)
+      ;; Catch an error and return nil.
+      ;; Also add a reference to url-request-method and url-mime-accept-string.
+      ;; This is because byte compilation removes the necessary varible otherwise.
+      (error (message "There was an error getting or parsing the json data of doi %s.\nRequest method: %s\nMime accept: %s" doi url-request-method url-mime-accept-string)
 	     nil))))
 
 (provide 'org-expand-doi)
