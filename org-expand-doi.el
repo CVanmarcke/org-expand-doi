@@ -165,12 +165,16 @@ Does not include 'doi:', 'cite:@', or brackets.")
 
 ;;;###autoload
 (defun org-expand-doi-setup ()
+  "Set up the org export hook so doi links are automatically expanded on export."
   (interactive)
-  ;; Load cache from disk, if not already populated.
-  (unless org-doi-cache 
-    (org-expand-doi-load-json))
+  ;; The cache is automatically populated the first time 'org-expand-doi-get-json-metadata'
+  ;; is run, either by loading an existing json file from disk
+  ;; or getting the doi data from the internet.
+  ;; (unless org-doi-cache 
+  ;;   (org-expand-doi-load-json))
   ;; Add the CSL json file to the bibliography.
-  (add-to-list 'org-cite-global-bibliography org-doi-json-csl-file)
+  (when (and org-doi-json-csl-file (file-exists-p org-doi-json-csl-file))
+    (add-to-list 'org-cite-global-bibliography org-doi-json-csl-file))
   ;; Add hook to save the cache on emacs exit
   (add-hook 'kill-emacs-hook (lambda ()
 			       (when org-expand-doi-auto-save
