@@ -51,8 +51,8 @@ This can be customized using the following placeholders:
 - ${cite}: Inserts a citation in the form of [cite:@doi_number].
    Note that you cannot have a citation inside a link.
    If you want a citation and a link, either
-   (1) make sure org-expand-doi-default-expansion is set to 'all or 'citation or
-   (2) set =org-expand-doi-make-link= to nil. "
+   (1) make sure org-expand-doi-default-expansion is set to `'all' or `'citation' or
+   (2) set `org-expand-doi-make-link' to nil."
   :group 'org-expand-doi
   :type 'string)
 
@@ -438,10 +438,7 @@ Check if %s is a valid doi." json-data url))
 	    (cl-pushnew (cons doi data) org-doi-cache)
 	    data))
       ;; Catch an error and return nil.
-      ;; Also add a reference to url-request-method and url-mime-accept-string.
-      ;; This is because byte compilation removes the necessary varible otherwise.
       (error
-       ;; (message "There was an error getting or parsing the json data of doi %s.\nRequest method: %s\nMime accept: %s" doi url-request-method url-mime-accept-string)
        (message "There was an error getting or parsing the json data of doi %s." doi)
 	     nil))))
 
