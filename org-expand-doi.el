@@ -446,7 +446,9 @@ See `https://github.com/jkitchin/org-ref'."
       data
     ;; ELSE get it from internet
     (condition-case nil 
-	(let ((json-object-type 'plist)
+	(let ((url-request-method "GET") ;; necessary to get the right response
+	      (url-mime-accept-string "application/citeproc+json") ;; necessary
+	      (json-object-type 'plist)
               (json-data)
 	      (url (concat org-link-doi-server-url doi)))
 	  (with-temp-buffer
@@ -467,7 +469,8 @@ Check if %s is a valid doi." json-data url))
 	    (plist-put data :id doi)
 	    (cl-pushnew (cons doi data) org-doi-cache)
 	    data))
-      (error nil))))
+      (error (message "There was an error getting or parsing the json data of doi %s." doi)
+	     nil))))
 
 (provide 'org-expand-doi)
 ;;; org-expand-doi.el ends here
