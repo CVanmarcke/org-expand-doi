@@ -153,7 +153,7 @@ every field.")
 
 (defvar org-doi-re "\\b\\(10[.][0-9]\\{4,\\}\\(?:[.][0-9]+\\)*/\\(?:[^\"&\'\[<>[:space:]]\\)+\\)\\b"
   "The regex for a doi number.
-Does not include 'doi:', 'cite:@', or brackets.")
+Does not include `doi:', `cite:@', or brackets.")
 (defvar org-doi-cite-re (concat "\\[cite:@" org-doi-re "\\]")
   "Regex for a doi number inside a cite block")
 
@@ -165,13 +165,17 @@ Does not include 'doi:', 'cite:@', or brackets.")
 (require 'ol-doi)
 (require 'ox)
 
+(declare-function s-format "s")
+(declare-function url-insert "url-handlers")
+(declare-function org-element-context "org-element")
+
 ;;;###autoload
 (defun org-expand-doi-setup ()
   "Set up the org export hook so doi links are automatically expanded on export."
   (interactive)
-  ;; The cache is automatically populated the first time 'org-expand-doi-get-json-metadata'
-  ;; is run, either by loading an existing json file from disk
-  ;; or getting the doi data from the internet.
+  ;; The cache is automatically populated the first time
+  ;; 'org-expand-doi-get-json-metadata' is run, either by loading
+  ;; an existing json file from disk or getting the doi data from the internet.
   ;; (unless org-doi-cache 
   ;;   (org-expand-doi-load-json))
   ;; Add the CSL json file to the bibliography.
@@ -182,7 +186,7 @@ Does not include 'doi:', 'cite:@', or brackets.")
 			       (when org-expand-doi-auto-save
 				 (org-expand-doi-save-json))))
   ;; Add hook to the export processor
-  (add-hook 'org-export-before-processing-hook #'org-expand-doi-export-hook))
+  (add-hook 'org-export-before-processing-functions #'org-expand-doi-export-hook))
 
 (defun org-expand-doi-cleanup ()
   "Remove all hooks and variable modifications."
@@ -192,12 +196,13 @@ Does not include 'doi:', 'cite:@', or brackets.")
   (remove-hook 'kill-emacs-hook (lambda ()
 				  (when org-expand-doi-auto-save
 				    (org-expand-doi-save-json))))
-  (remove-hook 'org-export-before-processing-hook #'org-expand-doi-export-hook))
+  (remove-hook 'org-export-before-processing-functions #'org-expand-doi-export-hook))
 
 (defun org-expand-doi-export-hook (backend)
   "This function is hooked into `org-export-before-processing-hook'
 to expand all doi links in a buffer before export.
-You can change the backends to which it will apply in the variable `org-expand-doi-export-backend'"
+You can change the backends to which it will apply
+in the variable `org-expand-doi-export-backend'"
   (when (or (equal 'any org-expand-doi-export-backend)
 	    (equal backend org-expand-doi-export-backend))
     (let ((org-expand-doi-format org-expand-doi-export-format))
@@ -405,7 +410,8 @@ and if any of them are not known by the citation manager, get them."
 	(insert (org-expand-doi--cache-to-json))))))
 
 (defun org-expand-doi-get-json-metadata (doi)
-  "Try to get json metadata for DOI.  Open the DOI in a browser if we do not get it.
+  "Try to get json metadata for DOI.
+Open the DOI in a browser if we do not get it.
 Afterwards, add an id equal to the doi number so we can reference it with org-cite.
 Also cache the doi metadata if we need it later.
 
@@ -422,9 +428,7 @@ See 'https://github.com/jkitchin/org-ref'."
       data
     ;; ELSE get it from internet
     (condition-case nil 
-	(let ((url-request-method "GET")
-              (url-mime-accept-string "application/citeproc+json")
-              (json-object-type 'plist)
+	(let ((json-object-type 'plist)
               (json-data)
 	      (url (concat org-link-doi-server-url doi)))
 	  (with-temp-buffer
