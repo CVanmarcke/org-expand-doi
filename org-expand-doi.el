@@ -147,7 +147,7 @@ When nil, keep the description as-is."
   :safe #'booleanp)
 
 (defcustom org-expand-doi-make-link t
-  "When non-nil and 'org-expand-doi-default-expansion' is `'all' or `'link',
+  "When non-nil and `org-expand-doi-default-expansion' is `'all' or `'link',
 when a doi link is expanded, create a link in the form of `[[desc][doi:XXXX]]'
 (with description according to `org-expand-doi-format'
 or `org-expand-doi-export-format').
