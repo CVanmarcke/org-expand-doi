@@ -106,7 +106,7 @@
   :group 'org-expand-doi
   :type 'file)
 
-(defcustom org-expand-doi-auto-save-cache t
+(defcustom org-expand-doi-auto-save t
   "If non-nil, auto save the cache on emacs exit."
   :group 'org-expand-doi
   :type '(choice (boolean :tag "Auto save cache on exit" t)
@@ -134,7 +134,7 @@ When nil, keep the description as-is."
 
 (defcustom org-expand-doi-export-backend 'any
   "For which backend the export process should be allowed.
-If 'any is selected, always apply. Otherwise, choose your backend."
+If `'any' is selected, always apply. Otherwise, choose your backend."
   :group 'org-expand-doi
   :type 'symbol
   :safe #'symbolp)
@@ -149,7 +149,8 @@ When nil, keep the description as-is."
 (defcustom org-expand-doi-make-link t
   "When non-nil and 'org-expand-doi-default-expansion' is `'all' or `'link',
 when a doi link is expanded, create a link in the form of `[[desc][doi:XXXX]]'
-(with desc according to `org-expand-doi-format' or `org-expand-doi-export-format').
+(with description according to `org-expand-doi-format'
+or `org-expand-doi-export-format').
 If nil, expand without creating a link.
 
 Note that if expansion is performed without link and the buffer is saved,
@@ -157,6 +158,7 @@ the link to the reference might be lost as the doi number will disappear.
 This will not occur if the expansion is only during export
 as modifications occur in a temporary buffer."
   :group 'org-expand-doi
+  :type 'boolean
   :safe #'booleanp)
 
 (defvar org-doi-cache nil
@@ -277,7 +279,8 @@ in the variable `org-expand-doi-export-backend'"
 		  org-expand-doi-citation-suffix)))
 
 (defun org-expand-doi--expand (doi)
-  "Expand a doi number by its metadata, according to the template `org-expand-doi-format'."
+  "Expand a doi number by its metadata,
+according to the template `org-expand-doi-format'."
   ;; Get data, either from cache or from internet
   (let ((data (org-expand-doi-get-json-metadata doi)))
     (if data
@@ -430,8 +433,8 @@ and if any of them are not known by the citation manager, get them."
 Add the DOI number as id so we can reference it with org-cite.
 Also cache the doi metadata if we need it later.
 
-Function adapted from `doi-utils' by 'jkitchin'.
-See 'https://github.com/jkitchin/org-ref'."
+Function adapted from `doi-utils' by `jkitchin'.
+See `https://github.com/jkitchin/org-ref'."
   ;; If the cache is nil and the CSL JSON file already exists
   ;; Load the cache from the JSON file
   (when (and (not org-doi-cache)
