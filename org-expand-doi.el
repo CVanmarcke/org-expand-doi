@@ -116,7 +116,7 @@ When nil, keep the description as-is."
 
 (defcustom org-expand-doi-make-link t
   "When non-nil and `org-expand-doi-default-expansion' is `'all' or `'link',
-when a doi link is expanded, create a link in the form of `[[desc][doi:XXXX]]'
+when a doi link is expanded, create a link in the form of `[[doi:XXXX][descr]]'
 (with description according to `org-expand-doi-format'
 or `org-expand-doi-export-format').
 If nil, expand without creating a link.

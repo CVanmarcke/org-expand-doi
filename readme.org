@@ -88,6 +88,9 @@ By default =org-expand-doi-format= is set to =${first-author} et al (${year})=: 
 
 ** Optional settings
 - =org-expand-doi-auto-save=: (Default =t=) Automatically saves cached metadata to the JSON file when Emacs exits.
+- =org-expand-doi-export-backend=: (Default ='all=) Specifies which org-export backends (='md=, '=html=, ...) should expand doi links.
+- =org-expand-doi-replace-existing-description=: (Default =t=) If non-nil, replace the description when expanding doi links. When nil, keep the description as-is.
+- =org-expand-doi-make-link=: (Default =t=) Expand into a link when non-nil.
 - =org-expand-doi-citation-prefix=: Add custom text or brackets around the generated citations.
 - =org-expand-doi-citation-suffix=: Add custom text or brackets around the generated citations.
 
