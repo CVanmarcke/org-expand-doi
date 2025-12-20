@@ -1,96 +1,61 @@
-;;; org-expand-doi.el --- Org Expand DOI library                  -*- lexical-binding: t; -*-
+;;; org-expand-doi.el --- Org DOI expander and extender  -*- lexical-binding: t; -*-
 
-;; - First get JSON data using doi-utils-get-json-metadata from doi-utils in org-ref https://github.com/jkitchin/org-ref/blob/master/doi-utils.el#L960
-;; - Somehow add the json data to a JSON CSL
-;;   - See citeproc docs: https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html
-;;   - is just a jsonfile with a list of citations [ {"doi":"123", .... }, {"doi":"abc", .... },]
-;;   - This jsonfile can be added to the =citar-bibliography= of =org-cite-global-bibliography= variable
-;; - Change the doi export function:
-;;   - doi:123456 becomes =author et al, title [cite:@author]=
-;;   - Because of the cite, automatically export to bibliography
+;; Copyright (C) 2025 Bruce D'Arcus
 
+;; Author: C Vanmarcke
+;; Version: 0.1
+;; Homepage: https://github.com/cvanmarcke/org-expand-doi
 
-;; TESTING
-(when nil
-  ;; (setq test-cache '(("10.1016/j.ijscr.2023.108044" :publisher "Elsevier BV" :is-referenced-by-count 16 :DOI "doi123")
-  ;; 		     ("10.1259/bjr/98449202" :publisher "Oxfort" :is-referenced-by-count 9 :DOI "doi123")))
-  ;; (setq test-metadata '(:publisher "Oxfort" :is-referenced-by-count 9 :id "doi123" :DOI "doi123" :author ((:family "famauth") (:family "second")) :published (:date-parts ((2023 4)))))
-  ;; (setq org-doi-cache test-cache)
+;; This file is not part of GNU Emacs.
+;;
+;;; Commentary:
 
-  (org-expand-doi--cache-to-json)
-  (org-expand-doi-save-json)
+;;  An Emacs library designed to streamline the use of DOIs in Org-mode.
+;;  It automatically fetches metadata for DOI links, expands them into
+;;  human-readable formats (like "Author et al. (Year)"),
+;;  and integrates them with org-cite or citar by generating
+;;  a local CSL-JSON bibliography on the fly.
+;;
+;;; Code:
 
-  ;; 1. Get doi (and add to cache `org-doi-cache' )
-  ;; TODO: add an 'id' field (just make it doi). This is compulsory!!!!
-  (org-expand-doi-get-json-metadata "10.1259/bjr/98449202")
-  (org-expand-doi-get-json-metadata "10.1016/j.ijscr.2023.108044")
+(require 'cl-lib)
+(require 'json)
+(require 'url-http)
+(require 'url-handlers)
+(require 'oc-basic)
+(require 'ol-doi)
+(require 'ox)
 
-  ;; 2. convert cache into a json list and save as csl json
-  (org-expand-doi-save-json)
+;;; Declare variables and functions for byte compiler
+
+(declare-function s-format "s")
+(declare-function url-insert "url-handlers")
+(declare-function org-element-context "org-element")
 (defvar url-request-method)
 (defvar url-mime-accept-string)
 
-  ;; 3. save cache to disk
-  (org-expand-doi-save-cache)
-
-  ;; 4. make cite key from doi: just cite the 'id' key we added when importing
-  ;; DONE, implemented in json downloader function
-
-  ;; 5. Expansion variables:
-  ;; Follow format of 'org-expand-doi-format' and 'org-expand-doi-export-format'
-
-  ;; 6 Expansion function
-  (org-expand-doi-buffer)
-  (org-expand-doi-at-point)
-  (org-expand-doi--expand "10.1259/bjr/98449202")
-  (citar-copy-reference '("10.1259/bjr/98449202"))
-
-  ;; 7 Implementation for publish functions
-  ;; DONE: just use `(org-expand-doi-setup)'
-
-  ;; 8 load cache function
-  ;; DONE: just use `(org-expand-doi-setup)'
-  (org-expand-doi-load-cache)
-
-  ;; 9. Hook to save cached doi's on emacs exit
-  ;; See org-id.el (c:/Users/cvmarc2/scoop/apps/emacs/current/share/emacs/30.2/lisp/org/org-id.el)
-  ;; DONE: Implemented in `(org-expand-doi-setup)'
-
-  ;; 10 Function to download doi metadata if a [cite:@] contains
-  ;; DONE, implemented in (org-expand-doi-export-hook)
-
-  ;; 11 TODO:
-  ;; Support for local json CSL (eg in the same folder), which can locally be applied with #+BIBLIOGRAPHY
-  ;; For this, we will need to make a cache from the local bibliography
-  ;; Or before getting the new data, check if such a key already exists!
-  (org-cite-basic--get-entry "Idontexist")
-  (setq entry-test (org-cite-basic--get-entry "scholzCTFindingsAdult2011"))
-  (setq json-test (json-encode entry-test))
-  (setq json-test2 (json-encode (org-expand-doi-get-json-metadata "10.1259/bjr/98449202")))
-  (setq entry-test2 (org-expand-doi-get-json-metadata "10.1259/bjr/98449202"))
-  ;; Can convert alist to plist, but problems with :keyword
-
-  ;; WIll probably have problems with author.....
-  (alist-entry-to-plist entry-test)
-  (defun alist-entry-to-plist (alist)
-    (let ((res '()))
-      (dolist (x alist)
-	(push (intern (concat ":" (symbol-name (car x)))) res)
-	(push (cdr x) res))
-      (nreverse res)))
-
-  ;; Problem: JSON data is plist with :keyword, while cite data is alist
-  ;; However, saving as json DOES work, but this will not work for cache.
-  ;; Therefore: when getting info for expansion: FIRST try to get from org-cite by doi, if unsuccesfull, get from cache
-  ;; What if we overwrite the json file in /var? Best load from json and make cache that way.
-
-  )
-
-;; Variables
+;:; Variables
 (defcustom org-expand-doi-format "${first-author} et al (${year})"
-  "The format to expand doi links"
+  "The format to expand doi links.
+
+By default set to \"${first-author} et al (${year})\":
+this will replace doi:XXXXX with \"Author et al (2025)\".
+
+This can be customized using the following placeholders:
+- ${any_json_key}: any key in the JSON CSL without colon:
+      eg publisher, issue, type, page, volume, language, ...
+- ${title}: Fetches the corresponding metadata field.
+- ${first-author}: The family name of the first author.
+- ${year}: The publication year.
+- ${DOI}: The DOI number (note: capital letters!).
+- ${cite}: Inserts a citation in the form of [cite:@doi_number].
+   Note that you cannot have a citation inside a link.
+   If you want a citation and a link, either
+   (1) make sure org-expand-doi-default-expansion is set to 'all or 'citation or
+   (2) set =org-expand-doi-make-link= to nil. "
   :group 'org-expand-doi
   :type 'string)
+
 (defcustom org-expand-doi-export-format "${first-author} et al (${year})"
   "The format to expand doi links during export"
   :group 'org-expand-doi
@@ -177,29 +142,22 @@ Does not include `doi:', `cite:@', or brackets.")
 (defvar org-doi-cite-re (concat "\\[cite:@" org-doi-re "\\]")
   "Regex for a doi number inside a cite block")
 
-;;; FUNCTIONS
-(require 'cl-lib)
-(require 'json)
-(require 'url-http)
-(require 'url-handlers)
-(require 'oc)
-(require 'oc-basic)
-(require 'ol-doi)
-(require 'ox)
-
-(declare-function s-format "s")
-(declare-function url-insert "url-handlers")
-(declare-function org-element-context "org-element")
+;;; Functions
 
 ;;;###autoload
 (defun org-expand-doi-setup ()
-  "Set up the org export hook so doi links are automatically expanded on export."
+  "Set up the hooks and variables.
+
+An org export hook is set so doi links are automatically expanded on export.
+
+The cache is automatically populated the first time
+`org-expand-doi-get-json-metadata' is run, either by loading
+an existing json file from disk or getting the doi data from the internet.
+
+The CSL JSON file, if it exists, is added to the bibliography.
+
+A hook is set to save the JSON cache when emacs exits. "
   (interactive)
-  ;; The cache is automatically populated the first time
-  ;; 'org-expand-doi-get-json-metadata' is run, either by loading
-  ;; an existing json file from disk or getting the doi data from the internet.
-  ;; (unless org-doi-cache 
-  ;;   (org-expand-doi-load-json))
   ;; Add the CSL json file to the bibliography.
   (when (and org-doi-json-csl-file (file-exists-p org-doi-json-csl-file))
     (add-to-list 'org-cite-global-bibliography org-doi-json-csl-file))
@@ -211,7 +169,7 @@ Does not include `doi:', `cite:@', or brackets.")
   (add-hook 'org-export-before-processing-functions #'org-expand-doi-export-hook))
 
 (defun org-expand-doi-cleanup ()
-  "Remove all hooks and variable modifications."
+  "Remove all hooks and variable modifications set by `org-expand-doi-setup'."
   (interactive)
   (setq org-cite-global-bibliography
 	(remove org-doi-json-csl-file org-cite-global-bibliography))
@@ -296,24 +254,29 @@ according to the template `org-expand-doi-format'."
   "Helper function for s-format.
 Get the value of KEYWORD from the doi plist.
 Case sensitive!"
-  (or (cond ((string-equal keyword "first-author")
-	     (plist-get (org-expand-doi--get-first-author plist) :family 'equal))
-	    ((string-equal keyword "first-author-surname")
-	     (plist-get (org-expand-doi--get-first-author plist) :given 'equal))
-	    ((string-equal keyword "first-author-surname-initial")
-	     (substring 
-	      (plist-get (org-expand-doi--get-first-author plist) :given 'equal)
-	      0 1))
-	    ((string-equal keyword "cite")
-	     (format "[cite:@%s]" (plist-get plist :id 'equal)))
-	    ((string-equal keyword "year")
-	     (let ((published (or (plist-get plist :published 'equal)
-				  (plist-get plist :issued 'equal))))
-	       (aref (aref (plist-get published :date-parts 'equal) 0) 0)))
-	    (t
-	     (plist-get plist (intern (concat ":" keyword)) 'equal)))
-      ;; If the keyword did not exist return an empty list.
-      ""))
+  (or 
+   (condition-case nil
+       (cond ((string-equal keyword "first-author")
+	      (plist-get (org-expand-doi--get-first-author plist) :family 'equal))
+	     ((string-equal keyword "first-author-surname")
+	      (plist-get (org-expand-doi--get-first-author plist) :given 'equal))
+	     ((string-equal keyword "first-author-surname-initial")
+	      (substring 
+	       (plist-get (org-expand-doi--get-first-author plist) :given 'equal)
+	       0 1))
+	     ((string-equal keyword "cite")
+	      (format "[cite:@%s]" (plist-get plist :id 'equal)))
+	     ((string-equal keyword "year")
+	      (let ((published (or (plist-get plist :published 'equal)
+				   (plist-get plist :issued 'equal))))
+		(aref (aref (plist-get published :date-parts 'equal) 0) 0)))
+	     (t
+	      (plist-get plist (intern (concat ":" keyword)) 'equal)))
+     (error (message "Error retrieving JSON fields for keyword %s from doi %s"
+		     keyword (plist-get plist :id 'equal))
+	    nil))
+   ;; If the keyword did not exist or error return an empty string.
+   ""))
 
 (defun org-expand-doi--get-first-author (entry)
   (let ((authors (or (plist-get entry :author 'equal)
@@ -390,8 +353,17 @@ and if any of them are not known by the citation manager, get them."
          (message "Error parsing `org-doi-json-csl-file' from %s" org-doi-json-csl-file)))
     (message "Error opening the CSL file: does the file exist?")))
 
+(defun org-expand-doi-save-json ()
+  "Export the `org-doi-cache' to a CSL json file, located at `org-doi-csl-file'."
+  (interactive)
+  (when (and org-doi-json-csl-file org-doi-cache)
+    (make-directory (file-name-parent-directory org-doi-json-csl-file) t)
+    (with-temp-file org-doi-json-csl-file
+      (let ((print-level nil)
+	    (print-length nil))
+	;; alternative: json-insert
+	(insert (org-expand-doi--cache-to-json))))))
 
-;;;###autoload
 (defun org-expand-doi-load-cache ()
   "Load `org-doi-cache' from `org-doi-cache-file'."
   ;; DEPRACATED, use 'org-expand-doi-load-json'
@@ -421,16 +393,6 @@ and if any of them are not known by the citation manager, get them."
   "Clear the doi metadata cache."
   (interactive)
   (setq org-doi-cache nil))
-
-(defun org-expand-doi-save-json ()
-  "Export the `org-doi-cache' to a CSL json file, located at `org-doi-csl-file'."
-  (interactive)
-  (when (and org-doi-json-csl-file org-doi-cache)
-    (with-temp-file org-doi-json-csl-file
-      (let ((print-level nil)
-	    (print-length nil))
-	;; alternative: json-insert
-	(insert (org-expand-doi--cache-to-json))))))
 
 (defun org-expand-doi-get-json-metadata (doi)
   "Try to get json metadata for DOI.
@@ -479,6 +441,20 @@ Check if %s is a valid doi." json-data url))
        ;; (message "There was an error getting or parsing the json data of doi %s.\nRequest method: %s\nMime accept: %s" doi url-request-method url-mime-accept-string)
        (message "There was an error getting or parsing the json data of doi %s." doi)
 	     nil))))
+
+;;; Test area
+(when nil
+  (org-expand-doi-clear-cache)
+
+  (setq testdoi "10.1007/978-3-642-13327-5")
+  (setq testdoi "10.1259/bjr/98449202")
+  (setq testdoi-data (org-expand-doi-get-json-metadata testdoi))
+  (setq testdoi-expansion (org-expand-doi--expand testdoi))
+
+  (setq json-cache (org-expand-doi--cache-to-json))
+
+  (org-expand-doi-save-json)
+  (org-expand-doi-load-json))
 
 (provide 'org-expand-doi)
 ;;; org-expand-doi.el ends here
