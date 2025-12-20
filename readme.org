@@ -16,6 +16,7 @@
 - *Caching*: Stores metadata locally to prevent redundant network requests and improve performance.
 
 * Installation
+** Manual installation
 1. Download the script: Save =org-expand-doi.el= to your Emacs load path (e.g., =~/.emacs.d/lisp/=).
 2. Add to configuration: Add the following to your init.el or .emacs:
 
@@ -27,12 +28,15 @@
   (org-expand-doi-setup)
 #+end_src
 
-3. Alternative with =use-package=:
+** With =use-package=
 
 #+begin_src emacs-lisp
   (use-package org-expand-doi
-    :load-path "~/.emacs.d/lisp/"
-    :commands org-expand-doi-setup
+    :ensure (:host github :repo "cvanmarcke/org-expand-doi")
+    ;; If :ensure does not work:
+    ;; :init
+    ;; (unless (package-installed-p 'org-expand-doi)
+    ;;   (package-vc-install "https://github.com/cvanmarcke/org-expand-doi"))
     :init
     (with-eval-after-load 'ox
       (org-expand-doi-setup)))
@@ -77,5 +81,3 @@ By default =org-expand-doi-format= is set to =${first-author} et al (${year})=: 
 - =org-expand-doi-citation-prefix=: Add custom text or brackets around the generated citations.
 - =org-expand-doi-citation-suffix=: Add custom text or brackets around the generated citations.
 
-* To do
-- There is a problem when the script is byte compiled: in these cases the =json= functions do not work properly.
