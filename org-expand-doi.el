@@ -343,13 +343,16 @@ and if any of them are not known by the citation manager, get them."
 	  (if-let ((data (with-temp-buffer
 			   (insert-file-contents org-doi-json-csl-file)
 			   (json-parse-buffer :object-type 'plist))))
-	      (setq org-doi-cache 
-		    (mapcar (lambda (el)
-			      (let ((DOI (plist-get el :DOI 'equal)))
-				(cons DOI el)))
-			    data)))
+	      (progn 
+		(setq org-doi-cache 
+		      (mapcar (lambda (el)
+				(let ((DOI (plist-get el :DOI 'equal)))
+				  (cons DOI el)))
+			      data))
+		(message "Loaded doi data from %s" org-doi-json-csl-file))
+	    (message "Could not load data from %s, it returned nil" org-doi-json-csl-file))
 	(error
-         (message "Error parsing `org-doi-json-csl-file' from %s, setting it to nil")))
+         (message "Error parsing `org-doi-json-csl-file' from %s" org-doi-json-csl-file)))
     (message "Error opening the CSL file: does the file exist?")))
 
 
