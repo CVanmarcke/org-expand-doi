@@ -206,7 +206,10 @@ in the variable `org-expand-doi-export-backend'"
 	   (context (org-element-context))
 	   (doi (org-element-property :path context))
 	   (begin (org-element-property :begin context))
-	   (end (org-element-property :end context))
+	   (end (- (org-element-property :end context)
+		   ;; Substract 1 if there is a whitespace after the link,
+		   ;; because otherwise :end is the start of the next word
+		   (org-element-property :post-blank context)))
 	   (desc (and (org-element-property :contents-begin context)
                       (org-element-property :contents-end context)
                       (buffer-substring-no-properties
