@@ -105,13 +105,6 @@
                  (const :tag "Do not auto save cache on exit" nil))
   :safe #'booleanp)
 
-(defcustom org-expand-doi-add-citation t
-  "When non-nil, add a citation after the doi link in the form of '[cite:@doinumber]'."
-  :group 'org-expand-doi
-  :type '(choice (const :tag "Add citation" t)
-                 (const :tag "Do not add citation" nil))
-  :safe #'booleanp)
-
 (defcustom org-expand-doi-citation-prefix ""
   "The prefix to set after inserting a citation."
   :group 'org-expand-doi)
@@ -138,6 +131,15 @@ If 'any is selected, always apply. Otherwise, choose your backend."
 (defcustom org-expand-doi-replace-existing-description t
   "When non-nil, when expanding doi links, replace the description.
 When nil, keep the description as-is." 
+  :group 'org-expand-doi
+  :safe #'booleanp)
+
+(defcustom org-expand-doi-make-link t
+  "When non-nil and 'org-expand-doi-default-expansion' is `'all' or `'link', when a doi link is expanded, create a link in the form of `[[desc][doi:XXXX]]' (with desc according to `org-expand-doi-format' or `org-expand-doi-export-format').
+If nil, expand without creating a link.
+
+Note that if expansion is performed without link and the buffer is saved, the link to the reference might be lost as the doi number will disappear.
+This will not occur if the expansion is only during export as modifications occur in a temporary buffer."
   :group 'org-expand-doi
   :safe #'booleanp)
 
@@ -241,9 +243,10 @@ You can change the backends to which it will apply in the variable `org-expand-d
 		desc))) 
     (goto-char begin)
     (delete-region begin end)
-    (insert (format "[[%s][%s]]"
-		    (concat "doi:" doi)
-		    desc))))
+    (insert 
+     (if org-expand-doi-make-link
+	 (format "[[%s][%s]]" (concat "doi:" doi) desc)
+       (format "%s" desc)))))
 
 (defun org-expand-doi--add-citation (end doi)
   (goto-char end)
