@@ -56,11 +56,11 @@ When =(org-expand-doi-setup)= is called, the library hooks into the Org export p
 
 | Variable                         | Default Value                       | Description                                                                                           |
 |----------------------------------+-------------------------------------+-------------------------------------------------------------------------------------------------------|
-| =org-expand-doi-format=            | "${first-author} et al (${year})"   | The template used for expanding DOI links in the buffer.                                              |
-| =org-expand-doi-export-format=     | "${first-author} et al (${year})"   | The template used specifically during the export process.                                             |
+| =org-expand-doi-format=            | ="${first-author} et al (${year})"=   | The template used for expanding DOI links in the buffer.                                              |
+| =org-expand-doi-export-format=     | ="${first-author} et al (${year})"=   | The template used specifically during the export process.                                             |
 | =org-expand-doi-default-expansion= | ='all=                                | Controls expansion behavior: 'all (link + citation), 'citation (citation only), or 'link (link only). |
 | =org-doi-json-csl-file=            | =~/.emacs.d/var/org/org-doi-csl.json= | The path where fetched metadata is stored in CSL-JSON format.                                         |
-| =org-expand-doi-make-link=         | t                                   |  Whether expansion should be a link =[[formatted][doi:XXXX]]= or just the description without link.     |
+| =org-expand-doi-make-link=         | =t=                                   |  Whether expansion should be a link =[[formatted][doi:XXXX]]= or just the description without link.     |
 
 ** Formatting templates
 By default =org-expand-doi-format= is set to =${first-author} et al (${year})=: this will replace =doi:XXXXX= with =Author et al (2025)=. This can be customized using the following placeholders:
@@ -69,7 +69,7 @@ By default =org-expand-doi-format= is set to =${first-author} et al (${year})=: 
 - =${first-author}=: The family name of the first author.
 - =${year}=: The publication year.
 - =${DOI}=: The DOI number (note: capital letters!).
-- =${cite}=: Inserts a citation in the form of [cite:@doi_number].
+- =${cite}=: Inserts a citation in the form of =[cite:@doi_number]=.
   - Note that you cannot have a citation inside a link. If you want a citation and a link, either (1) make sure =org-expand-doi-default-expansion= is set to ='all= or ='citation= (default is set to '=all=) or (2) set =org-expand-doi-make-link= to nil.
 
 ** Optional settings
