@@ -27,6 +27,8 @@
 
   ;; 2. convert cache into a json list and save as csl json
   (org-expand-doi-save-json)
+(defvar url-request-method)
+(defvar url-mime-accept-string)
 
   ;; 3. save cache to disk
   (org-expand-doi-save-cache)
@@ -473,7 +475,9 @@ Check if %s is a valid doi." json-data url))
       ;; Catch an error and return nil.
       ;; Also add a reference to url-request-method and url-mime-accept-string.
       ;; This is because byte compilation removes the necessary varible otherwise.
-      (error (message "There was an error getting or parsing the json data of doi %s.\nRequest method: %s\nMime accept: %s" doi url-request-method url-mime-accept-string)
+      (error
+       ;; (message "There was an error getting or parsing the json data of doi %s.\nRequest method: %s\nMime accept: %s" doi url-request-method url-mime-accept-string)
+       (message "There was an error getting or parsing the json data of doi %s." doi)
 	     nil))))
 
 (provide 'org-expand-doi)
