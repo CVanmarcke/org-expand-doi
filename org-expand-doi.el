@@ -53,24 +53,34 @@ This can be customized using the following placeholders:
    If you want a citation and a link, either
    (1) make sure org-expand-doi-default-expansion is set to `all' or
        `citation' or
-   (2) set `org-expand-doi-make-link' to nil."
+   (2) set `org-expand-doi-make-link' to nil.
+
+The related variable `org-expand-doi-export-format' is used
+for the export process."
   :group 'org-expand-doi
   :type 'string)
 
 (defcustom org-expand-doi-export-format "${first-author} et al (${year})"
-  "The format to expand doi links during export"
+  "The format to expand doi links during export.
+See `org-expand-doi-format' for more information."
   :group 'org-expand-doi
   :type 'string)
 
 (defcustom org-doi-cache-file
   (expand-file-name (convert-standard-filename "var/org/org-doi-cache.el") user-emacs-directory)
-  "List of files with IDs in those files."
+  " Deprecated. Now the cache is loaded and saved from/to the JSON CSL file.
+
+Location of the doi cache (only used between emacs restarts)."
   :group 'org-expand-doi
   :type 'file)
 
 (defcustom org-doi-json-csl-file
   (expand-file-name (convert-standard-filename "var/org/org-doi-csl.json") user-emacs-directory)
-  "List of files with IDs in those files."
+  "Location of the json csl file.
+This file can be added to `org-cite-global-bibliography'
+  to expand org citations with doi numbers.
+
+This file is also used as cache between emacs restarts."
   :group 'org-expand-doi
   :type 'file)
 
@@ -82,7 +92,7 @@ This can be customized using the following placeholders:
   :safe #'booleanp)
 
 (defcustom org-expand-doi-citation-prefix ""
-  "The prefix to set after inserting a citation."
+  "The prefix to set before inserting a citation."
   :type 'string
   :group 'org-expand-doi)
 
@@ -286,7 +296,7 @@ Case sensitive!"
   (let ((authors (or (plist-get entry :author 'equal)
 		     (plist-get entry :editor 'equal)))
 	(first))
-    ;; Author is in a vector, so need to convert it first.
+    ;; Author is in a vector, so we need to convert it first into a list.
     (cl-dolist (author (seq--into-list authors))
       (when (or (equal 1 (length authors)) ;; if only 1 author
 		(string-equal (plist-get author :sequence) "first"))
@@ -296,19 +306,12 @@ Case sensitive!"
 (defun org-expand-doi--get-missing-citations-buffer ()
   "Look for all doi styled citations (eg [cite:@doinumber])
 and if any of them are not known by the citation manager, get them."
-  (let (;;  (keys (org-cite-basic--all-keys))
-	(citations (org-expand-doi--matches-in-buffer org-doi-cite-re 1)))
+  (let ((citations (org-expand-doi--matches-in-buffer org-doi-cite-re 1)))
     (dolist (doi citations)
       (unless (org-cite-basic--get-entry doi)
 	(if (org-expand-doi-get-json-metadata doi)
 	    (org-expand-doi-save-json)
-	  (message (format "Metadata for %s not found" doi))))
-      ;; OLD version:
-      ;; (when (not (member doi keys))
-      ;; 	(if (org-expand-doi-get-json-metadata doi)
-      ;; 	    (org-expand-doi-save-json)
-      ;; 	  (message (format "Metadata for %s not found" doi))))
-      )))
+	  (message (format "Metadata for %s not found" doi)))))))
 
 (defun org-expand-doi--matches-in-buffer (regexp &optional match-group buffer)
   "Return a list of matches of REGEXP in BUFFER or the current buffer if not given."
@@ -326,12 +329,12 @@ and if any of them are not known by the citation manager, get them."
 
 (defun org-expand-doi--cache-to-json ()
   "Convert the doi cache to a json CSL file."
-  ;; We need to convert the cache (an alist of 'doi' . 'metadata')
+  ;; We need to convert the cache (an alist of `doi' . `metadata')
   ;; into a plain list of just the metadata.
   (let ((doi-list (mapcar
 		   (lambda (el) (cdr el))
 		   org-doi-cache)))
-    ;; Then transform the list into a vector with 'vconcat'
+    ;; Then transform the list into a vector with `vconcat'
     ;; Otherwise json-encode will not encode properly.
     (json-encode (vconcat doi-list))))
 
@@ -369,7 +372,9 @@ and if any of them are not known by the citation manager, get them."
 	(insert (org-expand-doi--cache-to-json))))))
 
 (defun org-expand-doi-load-cache ()
-  "Load `org-doi-cache' from `org-doi-cache-file'."
+  "Deprecated. Now the cache is loaded and saved from/to the JSON CSL file.
+
+Load `org-doi-cache' from `org-doi-cache-file'."
   ;; DEPRACATED, use 'org-expand-doi-load-json'
   (interactive)
   (when (and org-doi-cache-file
@@ -385,7 +390,9 @@ and if any of them are not known by the citation manager, get them."
 		  org-doi-cache-file))))))
 
 (defun org-expand-doi-save-cache ()
-  "Save `org-doi-cache' in `org-doi-cache-file'."
+  "Deprecated. Now the cache is loaded and saved from/to the JSON CSL file.
+
+Save `org-doi-cache' in `org-doi-cache-file'."
   (interactive)
   (when (and org-doi-cache-file org-doi-cache)
     (with-temp-file org-doi-cache-file
