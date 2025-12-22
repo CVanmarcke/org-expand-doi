@@ -225,27 +225,38 @@ in the variable `org-expand-doi-export-backend'"
                       (org-element-property :contents-end context)
                       (buffer-substring-no-properties
                        (org-element-property :contents-begin context)
-                       (org-element-property :contents-end context)))) )
+                       (org-element-property :contents-end context))))
+	   ;; Prepare the bounds for `citation-after'
+	   (search-bound (+ end (length org-expand-doi-citation-prefix)
+			    7 5  ;; 7 for [cite:@], 5 extra to make sure
+			    (length doi)))
+	   ;; Look for citation after link. If present, no citation needs to be added.
+	   (citation-after (search-forward (concat "[cite:@" doi) search-bound t)))
       (cond
        ((eq expand-what 'citation)
-	(org-expand-doi--add-citation end doi))
+	(unless citation-after
+	    (org-expand-doi--add-citation end doi)))
        ((eq expand-what 'link)
-	(org-expand-doi--link begin end doi desc))
+	(org-expand-doi--link-overwrite begin end doi desc))
        ((eq expand-what 'all)
-	(org-expand-doi--add-citation end doi)
-	(org-expand-doi--link begin end doi desc))))))
+	(unless citation-after
+	  (org-expand-doi--add-citation end doi))
+	(org-expand-doi--link-overwrite begin end doi desc))))))
 
-(defun org-expand-doi--link (begin end doi desc)
+(defun org-expand-doi--link-overwrite (begin end doi &optional desc)
   (let ((desc (if (or org-expand-doi-replace-existing-description
 		      (not desc))
 		  (org-expand-doi--expand doi)
 		desc))) 
     (goto-char begin)
     (delete-region begin end)
-    (insert 
-     (if org-expand-doi-make-link
-	 (format "[[%s][%s]]" (concat "doi:" doi) desc)
-       (format "%s" desc)))))
+    (org-expand-doi--insert-link doi desc)))
+
+(defun org-expand-doi--insert-link (doi desc)
+  (insert 
+   (if org-expand-doi-make-link
+       (format "[[%s][%s]]" (concat "doi:" doi) desc)
+     (format "%s" desc))))
 
 (defun org-expand-doi--add-citation (end doi)
   (goto-char end)
