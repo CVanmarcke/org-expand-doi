@@ -212,12 +212,12 @@ DOI is a DOI id string. If nil, prompt the user for a DOI id."
 	(desc (org-expand-doi--expand doi)))
     (cond
      ((eq 'citation org-expand-doi-default-expansion)
-      (org-expand-doi--add-citation (point) doi))
+      (org-expand-doi-insert-citation doi))
      ((eq 'link org-expand-doi-default-expansion)
       (org-expand-doi--insert-link doi desc))
      ((eq 'all org-expand-doi-default-expansion)
       (org-expand-doi--insert-link doi desc)
-      (org-expand-doi--add-citation (point) doi)))))
+      (org-expand-doi-insert-citation doi)))))
 
 ;;;###autoload
 (defun org-expand-doi-buffer ()
@@ -253,12 +253,14 @@ DOI is a DOI id string. If nil, prompt the user for a DOI id."
       (cond
        ((eq expand-what 'citation)
 	(unless citation-after
-	    (org-expand-doi--add-citation end doi)))
+	  (goto-char end)
+	  (org-expand-doi-insert-citation doi t)))
        ((eq expand-what 'link)
 	(org-expand-doi--link-overwrite begin end doi desc))
        ((eq expand-what 'all)
 	(unless citation-after
-	  (org-expand-doi--add-citation end doi))
+	  (goto-char end)
+	  (org-expand-doi-insert-citation doi t))
 	(org-expand-doi--link-overwrite begin end doi desc))))))
 
 (defun org-expand-doi--link-overwrite (begin end doi &optional desc)
@@ -276,12 +278,23 @@ DOI is a DOI id string. If nil, prompt the user for a DOI id."
        (format "[[%s][%s]]" (concat "doi:" doi) desc)
      (format "%s" desc))))
 
-(defun org-expand-doi--add-citation (end doi)
-  (goto-char end)
-  (insert (format "%s[cite:@%s]%s"
-		  org-expand-doi-citation-prefix
-		  doi
-		  org-expand-doi-citation-suffix)))
+;;;###autoload
+(defun org-expand-doi-insert-citation (&optional doi insert-only)
+  "Insert a citation to a DOI id at point.
+If DOI is nil, prompt the user for a doi number.
+
+When insert-only is nil, automatically retrieves the doi metadata
+if it is not already in the cache."
+  (interactive)
+  (let ((doi (or doi (read-from-minibuffer "Enter doi number: ")))) 
+    (insert (format "%s[cite:@%s]%s"
+		    org-expand-doi-citation-prefix
+		    doi
+		    org-expand-doi-citation-suffix))
+    (unless (or insert-only (org-cite-basic--get-entry doi))
+      (if (org-expand-doi-get-json-metadata doi)
+	  (org-expand-doi-save-json)
+	(message (format "Metadata for %s not found" doi))))))
 
 (defun org-expand-doi--expand (doi)
   "Expand a doi number by its metadata,
