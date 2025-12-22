@@ -202,6 +202,24 @@ in the variable `org-expand-doi-export-backend'"
       (org-expand-doi--get-missing-citations-buffer))))
 
 ;;;###autoload
+(defun org-insert-doi (&optional doi)
+  "Insert a doi link with automatic metadata retrieval and expansion,
+according to the settings of `org-expand-doi'.
+
+DOI is a DOI id string. If nil, prompt the user for a DOI id."
+  (interactive)
+  (let* ((doi (or doi (read-from-minibuffer "Enter doi number: ")))
+	(desc (org-expand-doi--expand doi)))
+    (cond
+     ((eq 'citation org-expand-doi-default-expansion)
+      (org-expand-doi--add-citation (point) doi))
+     ((eq 'link org-expand-doi-default-expansion)
+      (org-expand-doi--insert-link doi desc))
+     ((eq 'all org-expand-doi-default-expansion)
+      (org-expand-doi--insert-link doi desc)
+      (org-expand-doi--add-citation (point) doi)))))
+
+;;;###autoload
 (defun org-expand-doi-buffer ()
   (interactive)
   (let ((regexp (concat "doi:" org-doi-re)))
