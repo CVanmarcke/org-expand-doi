@@ -42,11 +42,9 @@ Malignant transformation typically occur in cysts larger than 8 cm ([[doi:10.101
 
 #+begin_src emacs-lisp
   (use-package org-expand-doi
-    :ensure (:host github :repo "cvanmarcke/org-expand-doi")
-    ;; If :ensure does not work:
-    ;; :init
-    ;; (unless (package-installed-p 'org-expand-doi)
-    ;;   (package-vc-install "https://github.com/cvanmarcke/org-expand-doi"))
+    :vc (:url "https://github.com/cvanmarcke/org-expand-doi")
+    ;; If you use `elpaca':
+    ;; :ensure (:host github :repo "cvanmarcke/org-expand-doi")
     :init
     (with-eval-after-load 'ox
       (org-expand-doi-setup)))
