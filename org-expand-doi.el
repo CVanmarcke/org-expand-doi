@@ -348,17 +348,20 @@ Case sensitive!"
 (defun org-expand-doi--get-missing-citations-buffer ()
   "Look for all doi styled citations (eg [cite:@doinumber])
 and if any of them are not known by the citation manager, get them."
-  (let ((citations (org-expand-doi--matches-in-buffer org-doi-cite-re 1)))
+  (let ((citations (org-expand-doi--doi-citations-in-buffer org-doi-cite-re 1)))
     (dolist (doi citations)
       (unless (org-cite-basic--get-entry doi)
 	(if (org-expand-doi-get-json-metadata doi)
 	    (org-expand-doi-save-json)
 	  (message (format "Metadata for %s not found" doi)))))))
 
-(defun org-expand-doi--matches-in-buffer (regexp &optional match-group buffer)
-  "Return a list of matches of REGEXP in BUFFER or the current buffer if not given."
+(defun org-expand-doi--doi-citations-in-buffer (regexp &optional match-group buffer)
+  "Return a list of all the doi citations in the buffer.
+A doi citation is in the form of [cite:@doi_number].
+There is support for combination citations, eg [cite:@citation1;@citation2].
+Duplicates will automatically be filtered."
   (let ((matches)
-	(match-group (or match-group 0)))
+		(match-group (or match-group 0)))
     (save-match-data
       (save-excursion
         (with-current-buffer (or buffer (current-buffer))
@@ -367,7 +370,10 @@ and if any of them are not known by the citation manager, get them."
             (goto-char 1)
             (while (search-forward-regexp regexp nil t 1)
               (push (match-string-no-properties match-group) matches)))))
-      (delete-dups matches))))
+      (delete-dups
+	   (flatten-list
+		;; Split any combination doi numbers (eg [cite:@123;@abc])
+		(mapcar (lambda (el) (string-split el ";@")) matches))))))
 
 (defun org-expand-doi--cache-to-json ()
   "Convert the doi cache to a json CSL file."
