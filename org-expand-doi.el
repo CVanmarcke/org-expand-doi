@@ -419,35 +419,6 @@ Duplicates will automatically be filtered."
 	;; alternative: json-insert
 	(insert (org-expand-doi--cache-to-json))))))
 
-(defun org-expand-doi-load-cache ()
-  "Deprecated. Now the cache is loaded and saved from/to the JSON CSL file.
-
-Load `org-doi-cache' from `org-doi-cache-file'."
-  ;; DEPRACATED, use 'org-expand-doi-load-json'
-  (interactive)
-  (when (and org-doi-cache-file
-	     (file-exists-p org-doi-cache-file))
-    (org-expand-doi-clear-cache)
-    (with-temp-buffer
-      (condition-case nil
-	  (progn
-	    (insert-file-contents org-doi-cache-file)
-	    (setq org-doi-cache (read (current-buffer))))
-	(error
-         (message "Could not read `org-doi-cache' from %s"
-		  org-doi-cache-file))))))
-
-(defun org-expand-doi-save-cache ()
-  "Deprecated. Now the cache is loaded and saved from/to the JSON CSL file.
-
-Save `org-doi-cache' in `org-doi-cache-file'."
-  (interactive)
-  (when (and org-doi-cache-file org-doi-cache)
-    (with-temp-file org-doi-cache-file
-      (let ((print-level nil)
-	    (print-length nil))
-	(print org-doi-cache (current-buffer))))))
-
 (defun org-expand-doi-clear-cache ()
   "Clear the doi metadata cache."
   (interactive)
