@@ -1,9 +1,9 @@
 ;;; org-expand-doi.el --- Org DOI expander and extender  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2025 Bruce D'Arcus
+;; Copyright (C) 2025 C Vanmarcke
 
 ;; Author: C Vanmarcke
-;; Version: 0.1
+;; Version: 1.0
 ;; Homepage: https://github.com/cvanmarcke/org-expand-doi
 
 ;; This file is not part of GNU Emacs.
